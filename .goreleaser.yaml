@@ -1,0 +1,100 @@
+# GoReleaser config: builds gum, packages it as .deb and publishes a GitHub release.
+# Local dry run: make package
+version: 2
+
+project_name: gum
+
+before:
+  hooks:
+    - go test ./...
+
+builds:
+  - id: gum
+    main: .
+    binary: gum
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }} -X main.builtBy=goreleaser
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+# Version-free names, so releases/latest/download/<name> always resolves.
+archives:
+  - id: gum
+    formats:
+      - tar.gz
+    name_template: "gum_linux_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+nfpms:
+  - id: gum
+    package_name: gum
+    file_name_template: "gum_linux_{{ .Arch }}"
+    formats:
+      - deb
+    vendor: lttl.dev
+    homepage: https://github.com/m5lk3n/gum
+    maintainer: Michael Klein <m5lk3n@gmail.com>
+    description: |-
+      MCP server for a limited set of Linux admin tasks
+      gum (go-util-mcp) lets an MCP client refresh the package index, upgrade
+      packages and remove unused dependencies through apt-get.
+    license: MIT
+    section: admin
+    priority: optional
+    bindir: /usr/bin
+    dependencies:
+      - adduser
+      - sudo
+    contents:
+      - src: packaging/gum.service
+        dst: /usr/lib/systemd/system/gum.service
+        file_info:
+          mode: 0644
+      - src: packaging/gum.default
+        dst: /etc/default/gum
+        type: config|noreplace
+        file_info:
+          mode: 0644
+      - src: packaging/needrestart.conf
+        dst: /etc/needrestart/conf.d/gum.conf
+        type: config|noreplace
+        file_info:
+          mode: 0644
+      - src: LICENSE
+        dst: /usr/share/doc/gum/copyright
+        file_info:
+          mode: 0644
+      - src: packaging/lintian-overrides
+        dst: /usr/share/lintian/overrides/gum
+        file_info:
+          mode: 0644
+    scripts:
+      postinstall: packaging/deb/postinst
+      preremove: packaging/deb/prerm
+      postremove: packaging/deb/postrm
+
+checksum:
+  name_template: SHA256SUMS
+  algorithm: sha256
+  extra_files:
+    - glob: scripts/quickstart.sh
+
+snapshot:
+  version_template: "{{ incpatch .Version }}~snapshot"
+
+changelog:
+  use: github-native
+
+release:
+  extra_files:
+    - glob: scripts/quickstart.sh

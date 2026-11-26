@@ -8,7 +8,7 @@ Type=simple
 User=gum
 Group=gum
 EnvironmentFile=-/etc/default/gum
-ExecStart=/usr/local/bin/gum
+ExecStart=/usr/bin/gum
 Restart=on-failure
 RestartSec=5s
 # gum waits for a running apt job (up to GUM_JOB_TIMEOUT) before exiting; never kill dpkg early.

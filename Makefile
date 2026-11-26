@@ -31,6 +31,13 @@ build:
 	@echo "Building gum version $(VERSION)"
 	@go build -ldflags "-X main.version=$(VERSION) -X 'main.builtBy=$(BUILT_BY)'"
 
+## package: build snapshot .deb packages and archives into dist/ with GoReleaser (in Docker)
+GORELEASER_IMAGE ?= goreleaser/goreleaser:v2.20.1
+.PHONY: package
+package:
+	docker run --rm --user $$(id -u):$$(id -g) -e HOME=/tmp -e GOTOOLCHAIN=auto \
+		-v "$(CURDIR):/src" -w /src $(GORELEASER_IMAGE) release --snapshot --clean
+
 ## test: run tests
 .PHONY: test
 test:

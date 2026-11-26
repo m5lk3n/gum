@@ -21,6 +21,8 @@ type BuildInfo struct {
 	Version   string `json:"version"`
 	BuiltBy   string `json:"built_by"`
 	GoVersion string `json:"go_version"`
+	// RestartPending is computed per call, see restartPending.
+	RestartPending bool `json:"restart_pending" jsonschema:"true if a newer gum binary was installed (e.g., by apt_upgrade) and gum must be restarted (systemctl restart gum) to run it"`
 }
 
 // NewMCPServer creates an MCP server with gum's tools registered.
@@ -31,12 +33,15 @@ func NewMCPServer(m *apt.Manager, build BuildInfo) *mcp.Server {
 	s := mcp.NewServer(&mcp.Implementation{Name: "gum", Title: "go-util-mcp", Version: build.Version}, nil)
 
 	mcp.AddTool(s, &mcp.Tool{
-		Name:        "version",
-		Title:       "Show gum version",
-		Description: "Return the version of the gum MCP server, who built it, and the Go version it was built with.",
+		Name:  "version",
+		Title: "Show gum version",
+		Description: "Return the version of the running gum MCP server, who built it, the Go version " +
+			"it was built with, and whether a restart is pending because a newer gum binary was installed.",
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true, OpenWorldHint: new(false)},
 	}, func(context.Context, *mcp.CallToolRequest, struct{}) (*mcp.CallToolResult, BuildInfo, error) {
-		return nil, build, nil
+		info := build
+		info.RestartPending = restartPending()
+		return nil, info, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

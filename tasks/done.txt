@@ -2,3 +2,4 @@ x add support for throttling
 x clarify async
 x add error handling
 x add install.sh and uninstall.sh
+x 2026-11-27 add quickstart

@@ -1,0 +1,30 @@
+#!/bin/sh
+# gum postrm: remove the sudoers rule and systemd state. Per Debian convention,
+# the gum system user is kept, even on purge.
+set -e
+
+UNIT=gum.service
+
+case "$1" in
+    remove | purge)
+        rm -f /etc/sudoers.d/gum
+        ;;
+esac
+
+if [ "$1" = remove ] && [ -d /run/systemd/system ]; then
+    systemctl --system daemon-reload >/dev/null || true
+fi
+
+if command -v deb-systemd-helper >/dev/null; then
+    case "$1" in
+        remove)
+            deb-systemd-helper mask "$UNIT" >/dev/null || true
+            ;;
+        purge)
+            deb-systemd-helper purge "$UNIT" >/dev/null || true
+            deb-systemd-helper unmask "$UNIT" >/dev/null || true
+            ;;
+    esac
+fi
+
+exit 0

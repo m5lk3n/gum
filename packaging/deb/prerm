@@ -1,0 +1,9 @@
+#!/bin/sh
+# gum prerm: stop gum.service on removal only, never on upgrade (see postinst).
+set -e
+
+if [ "$1" = remove ] && [ -d /run/systemd/system ]; then
+    deb-systemd-invoke stop gum.service >/dev/null || true
+fi
+
+exit 0

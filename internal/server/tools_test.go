@@ -55,8 +55,20 @@ func call(t *testing.T, cs *mcp.ClientSession, name string, out any) {
 func TestVersionTool(t *testing.T) {
 	var got BuildInfo
 	call(t, connect(t), "version", &got)
-	if got.Version != "1.2.3" || got.BuiltBy != "tester" || got.GoVersion == "" {
+	if got.Version != "1.2.3" || got.BuiltBy != "tester" || got.GoVersion == "" || got.RestartPending {
 		t.Fatalf("unexpected version %+v", got)
+	}
+}
+
+func TestVersionToolRestartPending(t *testing.T) {
+	orig := restartPending
+	t.Cleanup(func() { restartPending = orig })
+	restartPending = func() bool { return true }
+
+	var got BuildInfo
+	call(t, connect(t), "version", &got)
+	if !got.RestartPending {
+		t.Fatalf("restart_pending not reported: %+v", got)
 	}
 }
 
