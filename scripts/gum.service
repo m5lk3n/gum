@@ -1,0 +1,26 @@
+[Unit]
+Description=gum (go-util-mcp) MCP server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gum
+Group=gum
+EnvironmentFile=-/etc/default/gum
+ExecStart=/usr/local/bin/gum
+Restart=on-failure
+RestartSec=5s
+# gum waits for a running apt job (up to GUM_JOB_TIMEOUT) before exiting; never kill dpkg early.
+TimeoutStopSec=65min
+KillMode=mixed
+
+# Hardening is deliberately limited: gum escalates through sudo (so NoNewPrivileges is off),
+# and apt-get inherits this unit's sandbox, so it must be able to write /usr, /etc, /var, /boot.
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+
+[Install]
+WantedBy=multi-user.target
