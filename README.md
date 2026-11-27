@@ -140,9 +140,27 @@ The package installs:
 
 For a detailed breakdown, see [Bill of Material](BOM.md).
 
-To remove gum, run `sudo apt remove gum`. This also removes the sudoers rule.
-`sudo apt purge gum` removes `/etc/default/gum` too. The `gum` system user is
-kept, as is usual for Debian packages.
+### Uninstalling
+
+The Quickstart installs gum as a regular Debian package, so remove it with apt,
+whichever way you installed it:
+
+```sh
+# stop gum.service, remove the binary, the unit and the sudoers rule:
+sudo apt remove gum
+# or, to also remove /etc/default/gum and the systemd state:
+sudo apt purge gum
+```
+
+Even `purge` leaves the following in place. Remove them manually if needed:
+
+- the `gum` system user, which is kept as is usual for Debian packages:
+  `sudo deluser --system gum`
+- `/etc/gum/token`, if you set a token (see [Configuration](#configuration)),
+  because no package owns it: `sudo rm -rf /etc/gum`
+- the MCP client entry, if you added one (see
+  [Connecting a client](#connecting-a-client)), e.g., `claude mcp remove gum`,
+  or delete the entry from your `.mcp.json`
 
 ### Upgrading
 
