@@ -1,4 +1,4 @@
-module lttl.dev/gum
+module lttl.dev/gummy
 
 go 1.27.4
 

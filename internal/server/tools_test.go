@@ -8,7 +8,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"lttl.dev/gum/internal/apt"
+	"lttl.dev/gummy/internal/apt"
 )
 
 type okRunner struct{}

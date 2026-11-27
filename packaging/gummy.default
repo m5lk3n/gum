@@ -1,0 +1,7 @@
+# gummy configuration, read by gummy.service. Restart gummy after changing it:
+#   sudo systemctl restart gummy
+#GUMMY_LISTEN=127.0.0.1:8765
+# File holding the bearer token; required for non-loopback addresses.
+#GUMMY_TOKEN_FILE=/etc/gummy/token
+#GUMMY_UPDATE_MIN_INTERVAL=15m
+#GUMMY_JOB_TIMEOUT=60m

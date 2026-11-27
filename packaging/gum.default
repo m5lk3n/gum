@@ -1,7 +1,0 @@
-# gum configuration, read by gum.service. Restart gum after changing it:
-#   sudo systemctl restart gum
-#GUM_LISTEN=127.0.0.1:8765
-# File holding the bearer token; required for non-loopback addresses.
-#GUM_TOKEN_FILE=/etc/gum/token
-#GUM_UPDATE_MIN_INTERVAL=15m
-#GUM_JOB_TIMEOUT=60m

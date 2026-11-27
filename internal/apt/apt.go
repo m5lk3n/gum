@@ -18,7 +18,7 @@ var (
 	ErrBusy            = errors.New("another apt job is already running")
 	ErrLocked          = errors.New("the apt/dpkg lock is held by another process")
 	ErrDpkgInterrupted = errors.New("dpkg was interrupted; run `dpkg --configure -a` as root to repair it")
-	ErrSudo            = errors.New("sudo refused to run apt-get; check /etc/sudoers.d/gum (see `gum --print-sudoers`)")
+	ErrSudo            = errors.New("sudo refused to run apt-get; check /etc/sudoers.d/gummy (see `gummy --print-sudoers`)")
 	ErrTimeout         = errors.New("apt job timed out")
 	ErrNoSummary       = errors.New("could not find the summary line in apt-get output")
 	ErrCommandFailed   = errors.New("apt-get failed")
@@ -107,7 +107,7 @@ type Status struct {
 	Running *JobInfo `json:"running,omitempty"`
 	// Last holds the most recent finished job of each kind, keyed by job name.
 	Last map[string]JobInfo `json:"last"`
-	// LastRefresh is when the package index was last refreshed by gum.
+	// LastRefresh is when the package index was last refreshed by gummy.
 	LastRefresh time.Time `json:"last_refresh,omitzero"`
 	// NextRefresh is the earliest time apt_update will refresh the index again.
 	NextRefresh time.Time `json:"next_refresh,omitzero"`

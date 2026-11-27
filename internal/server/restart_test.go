@@ -8,7 +8,7 @@ import (
 
 func TestReplaced(t *testing.T) {
 	dir := t.TempDir()
-	bin := filepath.Join(dir, "gum")
+	bin := filepath.Join(dir, "gummy")
 	if err := os.WriteFile(bin, []byte("old"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -22,7 +22,7 @@ func TestReplaced(t *testing.T) {
 	}
 
 	// Replace the binary the way dpkg does: write a new file, rename it over the old one.
-	tmp := filepath.Join(dir, "gum.dpkg-new")
+	tmp := filepath.Join(dir, "gummy.dpkg-new")
 	if err := os.WriteFile(tmp, []byte("new"), 0o600); err != nil {
 		t.Fatal(err)
 	}

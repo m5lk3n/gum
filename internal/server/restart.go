@@ -8,9 +8,9 @@ import (
 // procSelfExe refers to the running binary, even after it was replaced on disk.
 const procSelfExe = "/proc/self/exe"
 
-// restartPending reports whether the gum binary on disk was replaced since this
+// restartPending reports whether the gummy binary on disk was replaced since this
 // process started, e.g., by a package upgrade, which deliberately doesn't
-// restart gum. Var so tests can stub it.
+// restart gummy. Var so tests can stub it.
 var restartPending = func() bool {
 	target, err := os.Readlink(procSelfExe)
 	if err != nil {

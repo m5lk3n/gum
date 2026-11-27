@@ -1,4 +1,4 @@
-// Command gum is a small MCP server for a limited set of Linux admin tasks.
+// Command gummy is a small MCP server for a limited set of Linux admin tasks.
 package main
 
 import (
@@ -16,8 +16,8 @@ import (
 	"syscall"
 	"time"
 
-	"lttl.dev/gum/internal/apt"
-	"lttl.dev/gum/internal/server"
+	"lttl.dev/gummy/internal/apt"
+	"lttl.dev/gummy/internal/server"
 )
 
 // Set through -ldflags, see Makefile.
@@ -35,18 +35,18 @@ type config struct {
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, "gum:", err)
+		fmt.Fprintln(os.Stderr, "gummy:", err)
 		os.Exit(1)
 	}
 }
 
 func run(args []string) error {
-	fs := flag.NewFlagSet("gum", flag.ContinueOnError)
+	fs := flag.NewFlagSet("gummy", flag.ContinueOnError)
 	var cfg config
-	fs.StringVar(&cfg.listen, "listen", envOr("GUM_LISTEN", "127.0.0.1:8765"), "address to listen on (env GUM_LISTEN)")
-	fs.StringVar(&cfg.tokenFile, "token-file", os.Getenv("GUM_TOKEN_FILE"), "file containing the bearer token clients must send (env GUM_TOKEN_FILE)")
-	updateMin := fs.String("update-min-interval", envOr("GUM_UPDATE_MIN_INTERVAL", "15m"), "minimum time between package index refreshes (env GUM_UPDATE_MIN_INTERVAL)")
-	jobTimeout := fs.String("job-timeout", envOr("GUM_JOB_TIMEOUT", "60m"), "maximum duration of a single apt job (env GUM_JOB_TIMEOUT)")
+	fs.StringVar(&cfg.listen, "listen", envOr("GUMMY_LISTEN", "127.0.0.1:8765"), "address to listen on (env GUMMY_LISTEN)")
+	fs.StringVar(&cfg.tokenFile, "token-file", os.Getenv("GUMMY_TOKEN_FILE"), "file containing the bearer token clients must send (env GUMMY_TOKEN_FILE)")
+	updateMin := fs.String("update-min-interval", envOr("GUMMY_UPDATE_MIN_INTERVAL", "15m"), "minimum time between package index refreshes (env GUMMY_UPDATE_MIN_INTERVAL)")
+	jobTimeout := fs.String("job-timeout", envOr("GUMMY_JOB_TIMEOUT", "60m"), "maximum duration of a single apt job (env GUMMY_JOB_TIMEOUT)")
 	showVersion := fs.Bool("version", false, "print version and exit")
 	printSudoers := fs.String("print-sudoers", "", "print the sudoers rule for the given user and exit")
 	if err := fs.Parse(args); err != nil {
@@ -54,7 +54,7 @@ func run(args []string) error {
 	}
 
 	if *showVersion {
-		fmt.Printf("gum %s (built by %s)\n", version, builtBy)
+		fmt.Printf("gummy %s (built by %s)\n", version, builtBy)
 		return nil
 	}
 	if *printSudoers != "" {
@@ -84,7 +84,7 @@ func serve(cfg config) error {
 		return err
 	}
 	if !loopback && token == "" {
-		return fmt.Errorf("refusing to listen on non-loopback address %q without a token (set GUM_TOKEN_FILE)", cfg.listen)
+		return fmt.Errorf("refusing to listen on non-loopback address %q without a token (set GUMMY_TOKEN_FILE)", cfg.listen)
 	}
 
 	mgr := apt.NewManager(apt.Config{
@@ -107,7 +107,7 @@ func serve(cfg config) error {
 
 	errCh := make(chan error, 1)
 	go func() {
-		log.Info("gum listening", "version", version, "addr", cfg.listen, "endpoint", "/mcp", "auth", token != "")
+		log.Info("gummy listening", "version", version, "addr", cfg.listen, "endpoint", "/mcp", "auth", token != "")
 		errCh <- srv.ListenAndServe()
 	}()
 

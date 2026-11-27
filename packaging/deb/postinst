@@ -1,22 +1,22 @@
 #!/bin/sh
-# gum postinst: create the gum user, install the sudoers rule, enable gum.service.
+# gummy postinst: create the gummy user, install the sudoers rule, enable gummy.service.
 #
-# gum.service is started on a fresh install but deliberately NOT restarted on
-# upgrade: when gum upgrades itself (apt_upgrade), this script runs inside
-# gum.service, and restarting it from here would wait on itself until the stop
-# timeout and then kill dpkg. The old gum keeps running until restarted.
+# gummy.service is started on a fresh install but deliberately NOT restarted on
+# upgrade: when gummy upgrades itself (apt_upgrade), this script runs inside
+# gummy.service, and restarting it from here would wait on itself until the stop
+# timeout and then kill dpkg. The old gummy keeps running until restarted.
 set -e
 
-USER_NAME=gum
-SUDOERS=/etc/sudoers.d/gum
-UNIT=gum.service
+USER_NAME=gummy
+SUDOERS=/etc/sudoers.d/gummy
+UNIT=gummy.service
 
 install_sudoers() {
     tmp="$(mktemp)"
-    gum --print-sudoers "$USER_NAME" >"$tmp"
+    gummy --print-sudoers "$USER_NAME" >"$tmp"
     if ! visudo -cf "$tmp" >/dev/null; then
         rm -f "$tmp"
-        echo "gum: generated sudoers rule failed validation; not installed" >&2
+        echo "gummy: generated sudoers rule failed validation; not installed" >&2
         exit 1
     fi
     install -m 0440 -o root -g root "$tmp" "$SUDOERS"
@@ -47,12 +47,12 @@ if [ "$1" = configure ] || [ "$1" = abort-upgrade ] ||
 
     if [ -d /run/systemd/system ]; then
         systemctl --system daemon-reload >/dev/null || true
-        # Start only if not running; a running gum (e.g., the one upgrading
+        # Start only if not running; a running gummy (e.g., the one upgrading
         # itself) is left alone. "$2" alone can't tell: it's also set when
         # reinstalling after 'apt remove'.
         if systemctl --quiet is-active "$UNIT"; then
             if [ "$1" = configure ] && [ -n "$2" ]; then
-                echo "gum: upgraded; run 'sudo systemctl restart gum' to activate the new version"
+                echo "gummy: upgraded; run 'sudo systemctl restart gummy' to activate the new version"
             fi
         else
             deb-systemd-invoke start "$UNIT" >/dev/null || true

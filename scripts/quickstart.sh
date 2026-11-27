@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Download the gum .deb from a GitHub release, verify it and install it with apt.
-# Usage: curl -fsSL https://github.com/m5lk3n/gum/releases/latest/download/quickstart.sh | sudo bash
-# Pin a version: ... | sudo GUM_VERSION=1.2.3 bash
-# Running it again upgrades gum; restart gum.service afterwards to activate it.
-# Remove gum with 'sudo apt remove gum' ('purge' also removes /etc/default/gum).
+# Download the gummy .deb from a GitHub release, verify it and install it with apt.
+# Usage: curl -fsSL https://github.com/m5lk3n/gummy/releases/latest/download/quickstart.sh | sudo bash
+# Pin a version: ... | sudo GUMMY_VERSION=1.2.3 bash
+# Running it again upgrades gummy; restart gummy.service afterwards to activate it.
+# Remove gummy with 'sudo apt remove gummy' ('purge' also removes /etc/default/gummy).
 set -euo pipefail
 
-REPO=m5lk3n/gum
+REPO=m5lk3n/gummy
 
 die() { echo "quickstart.sh: $*" >&2; exit 1; }
 
 # Everything runs inside main, so a truncated download executes nothing.
 main() {
     [[ $EUID -eq 0 ]] || die "must run as root, e.g., '... | sudo bash'"
-    command -v apt-get >/dev/null || die "apt-get not found; gum only supports Debian-based systems"
+    command -v apt-get >/dev/null || die "apt-get not found; gummy only supports Debian-based systems"
     command -v curl >/dev/null || die "curl not found"
     command -v sha256sum >/dev/null || die "sha256sum not found"
 
@@ -25,13 +25,13 @@ main() {
     esac
 
     local base
-    if [[ -n "${GUM_VERSION:-}" ]]; then
-        base="https://github.com/$REPO/releases/download/v${GUM_VERSION#v}"
+    if [[ -n "${GUMMY_VERSION:-}" ]]; then
+        base="https://github.com/$REPO/releases/download/v${GUMMY_VERSION#v}"
     else
         base="https://github.com/$REPO/releases/latest/download"
     fi
 
-    local deb="gum_linux_${arch}.deb"
+    local deb="gummy_linux_${arch}.deb"
     local tmp
     tmp="$(mktemp -d)"
     # shellcheck disable=SC2064 # expand $tmp now

@@ -1,122 +1,122 @@
 # Bill of Material
 
-Here's what gum installs on a system in detail:
+Here's what gummy installs on a system in detail:
 
 ## Package dependencies
 
-The `gum` `.deb` depends on these packages. `apt` installs them if they're
+The `gummy` `.deb` depends on these packages. `apt` installs them if they're
 missing:
 
-| Package   | Why                                                      |
-| --------- | -------------------------------------------------------- |
-| `adduser` | `postinst` creates the `gum` system user with it         |
-| `sudo`    | gum reaches root only through `sudo -n /usr/bin/apt-get` |
+| Package   | Why                                                        |
+| --------- | ---------------------------------------------------------- |
+| `adduser` | `postinst` creates the `gummy` system user with it         |
+| `sudo`    | gummy reaches root only through `sudo -n /usr/bin/apt-get` |
 
 ## Files shipped by the package
 
-These files are part of the package and tracked by `dpkg` (`dpkg -L gum`):
+These files are part of the package and tracked by `dpkg` (`dpkg -L gummy`):
 
 <!-- markdownlint-disable MD013 -->
-| Path                                  | Mode   | Type     | Source                        | Purpose                                                            |
-| ------------------------------------- | ------ | -------- | ----------------------------- | ------------------------------------------------------------------ |
-| `/usr/bin/gum`                        | `0755` | binary   | `go build`                    | The MCP server (statically linked)                                 |
-| `/usr/lib/systemd/system/gum.service` | `0644` | file     | `packaging/gum.service`       | systemd unit that runs gum as the `gum` user                       |
-| `/etc/default/gum`                    | `0644` | conffile | `packaging/gum.default`       | Configuration (`GUM_*` variables, all commented out)               |
-| `/etc/needrestart/conf.d/gum.conf`    | `0644` | conffile | `packaging/needrestart.conf`  | Keeps `needrestart` from restarting `gum.service` after `apt` runs |
-| `/usr/share/doc/gum/copyright`        | `0644` | file     | `LICENSE`                     | MIT license                                                        |
-| `/usr/share/lintian/overrides/gum`    | `0644` | file     | `packaging/lintian-overrides` | Allows the statically linked binary                                |
+| Path                                    | Mode   | Type     | Source                        | Purpose                                                              |
+| --------------------------------------- | ------ | -------- | ----------------------------- | -------------------------------------------------------------------- |
+| `/usr/bin/gummy`                        | `0755` | binary   | `go build`                    | The MCP server (statically linked)                                   |
+| `/usr/lib/systemd/system/gummy.service` | `0644` | file     | `packaging/gummy.service`     | systemd unit that runs gummy as the `gummy` user                     |
+| `/etc/default/gummy`                    | `0644` | conffile | `packaging/gummy.default`     | Configuration (`GUMMY_*` variables, all commented out)               |
+| `/etc/needrestart/conf.d/gummy.conf`    | `0644` | conffile | `packaging/needrestart.conf`  | Keeps `needrestart` from restarting `gummy.service` after `apt` runs |
+| `/usr/share/doc/gummy/copyright`        | `0644` | file     | `LICENSE`                     | MIT license                                                          |
+| `/usr/share/lintian/overrides/gummy`    | `0644` | file     | `packaging/lintian-overrides` | Allows the statically linked binary                                  |
 <!-- markdownlint-enable MD013 -->
 
 Conffiles (`config|noreplace`) keep local changes on upgrade and are only
-removed by `apt purge gum`.
+removed by `apt purge gummy`.
 
 ## Created by the maintainer scripts
 
 `postinst` creates these on `configure` (fresh install, upgrade, reinstall).
-`dpkg` doesn't track them, so `dpkg -L gum` doesn't list them:
+`dpkg` doesn't track them, so `dpkg -L gummy` doesn't list them:
 
 <!-- markdownlint-disable MD013 -->
-| Item                 | Details                                                                                                                                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `gum` system user    | `adduser --system`; system UID, no password, home `/nonexistent` (not created), shell `/usr/sbin/nologin`; created only if missing                                                         |
-| `gum` system group   | `adduser --group`; primary group of the `gum` user                                                                                                                                         |
-| `/etc/sudoers.d/gum` | Mode `0440`, owner `root:root`; generated by `gum --print-sudoers gum` and validated with `visudo -c` on every `configure`                                                                 |
-| systemd enablement   | `deb-systemd-helper enable gum.service`, i.e., the `multi-user.target.wants/gum.service` symlink in `/etc/systemd/system/` plus state under `/var/lib/systemd/deb-systemd-helper-enabled/` |
-| Running service      | `gum.service` is started if it isn't running; an already running gum is left alone (see [README.md](README.md#upgrading))                                                                  |
+| Item                   | Details                                                                                                                                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gummy` system user    | `adduser --system`; system UID, no password, home `/nonexistent` (not created), shell `/usr/sbin/nologin`; created only if missing                                                             |
+| `gummy` system group   | `adduser --group`; primary group of the `gummy` user                                                                                                                                           |
+| `/etc/sudoers.d/gummy` | Mode `0440`, owner `root:root`; generated by `gummy --print-sudoers gummy` and validated with `visudo -c` on every `configure`                                                                 |
+| systemd enablement     | `deb-systemd-helper enable gummy.service`, i.e., the `multi-user.target.wants/gummy.service` symlink in `/etc/systemd/system/` plus state under `/var/lib/systemd/deb-systemd-helper-enabled/` |
+| Running service        | `gummy.service` is started if it isn't running; an already running gummy is left alone (see [README.md](README.md#upgrading))                                                                  |
 <!-- markdownlint-enable MD013 -->
 
 ### Sudoers rule
 
-`/etc/sudoers.d/gum` allows the `gum` user to run exactly these commands as
+`/etc/sudoers.d/gummy` allows the `gummy` user to run exactly these commands as
 root, without a password, and keeps `DEBIAN_FRONTEND` in the environment:
 
 <!-- markdownlint-disable MD013 -->
 ```text
-# Generated by `gum --print-sudoers`. Allows only the exact apt-get calls gum makes.
-Defaults:gum env_keep += "DEBIAN_FRONTEND"
-gum ALL=(root) NOPASSWD: /usr/bin/apt-get -q update, \
+# Generated by `gummy --print-sudoers`. Allows only the exact apt-get calls gummy makes.
+Defaults:gummy env_keep += "DEBIAN_FRONTEND"
+gummy ALL=(root) NOPASSWD: /usr/bin/apt-get -q update, \
     /usr/bin/apt-get -q -o Dpkg\:\:Options\:\:\=--force-confdef -o Dpkg\:\:Options\:\:\=--force-confold upgrade -y, \
     /usr/bin/apt-get -q -o Dpkg\:\:Options\:\:\=--force-confdef -o Dpkg\:\:Options\:\:\=--force-confold autoremove -y
 ```
 <!-- markdownlint-enable MD013 -->
 
-Run `gum --print-sudoers gum` to see the rule for the installed version.
+Run `gummy --print-sudoers gummy` to see the rule for the installed version.
 
 ## Package metadata
 
 `dpkg` keeps its usual bookkeeping for the package in `/var/lib/dpkg/info/`:
-`gum.list`, `gum.md5sums`, `gum.conffiles`, `gum.postinst`, `gum.prerm` and
-`gum.postrm`.
+`gummy.list`, `gummy.md5sums`, `gummy.conffiles`, `gummy.postinst`,
+`gummy.prerm` and `gummy.postrm`.
 
 ## Runtime footprint
 
 <!-- markdownlint-disable MD013 -->
 | Item             | Details                                                                                         |
 | ---------------- | ----------------------------------------------------------------------------------------------- |
-| Process          | `/usr/bin/gum`, running as `gum:gum` under `gum.service`                                        |
-| Network listener | TCP `127.0.0.1:8765` by default (`GUM_LISTEN`)                                                  |
+| Process          | `/usr/bin/gummy`, running as `gummy:gummy` under `gummy.service`                                |
+| Network listener | TCP `127.0.0.1:8765` by default (`GUMMY_LISTEN`)                                                |
 | Child processes  | `sudo -n /usr/bin/apt-get …` (privileged) and `/usr/bin/apt-get -s …` (unprivileged simulation) |
-| Files on disk    | None; gum keeps its state (e.g., last job results) in memory only                               |
-| Logs             | stdout/stderr, collected by the systemd journal (`journalctl -u gum`)                           |
+| Files on disk    | None; gummy keeps its state (e.g., last job results) in memory only                             |
+| Logs             | stdout/stderr, collected by the systemd journal (`journalctl -u gummy`)                         |
 | Temporary files  | Only in the unit's private `/tmp` (`PrivateTmp=yes`)                                            |
 <!-- markdownlint-enable MD013 -->
 
 ## Optional, created by the administrator
 
 The package doesn't create these. The [README.md](README.md) describes how to
-set them up when gum listens on a non-loopback address:
+set them up when gummy listens on a non-loopback address:
 
 <!-- markdownlint-disable MD013 -->
-| Path             | Mode   | Owner      | Purpose                                       |
-| ---------------- | ------ | ---------- | --------------------------------------------- |
-| `/etc/gum/`      | `0750` | `root:gum` | Directory for the token file                  |
-| `/etc/gum/token` | `0440` | `root:gum` | Bearer token, referenced via `GUM_TOKEN_FILE` |
+| Path               | Mode   | Owner        | Purpose                                         |
+| ------------------ | ------ | ------------ | ----------------------------------------------- |
+| `/etc/gummy/`      | `0750` | `root:gummy` | Directory for the token file                    |
+| `/etc/gummy/token` | `0440` | `root:gummy` | Bearer token, referenced via `GUMMY_TOKEN_FILE` |
 <!-- markdownlint-enable MD013 -->
 
 ## Quickstart
 
 `scripts/quickstart.sh` installs nothing besides the package. It downloads
-`gum_linux_<arch>.deb` and `SHA256SUMS` into a temporary directory, verifies the
+`gummy_linux_<arch>.deb` and `SHA256SUMS` into a temporary directory, verifies the
 checksum, installs the package with `apt-get install` and deletes the temporary
 directory on exit.
 
 ## Removal
 
 <!-- markdownlint-disable MD013 -->
-| Action                                        | `apt remove gum` | `apt purge gum` |
-| --------------------------------------------- | :--------------: | :-------------: |
-| Stops `gum.service`                           |       yes        |       yes       |
-| Removes `/usr/bin/gum`, unit, docs, overrides |       yes        |       yes       |
-| Removes `/etc/sudoers.d/gum`                  |       yes        |       yes       |
-| Masks `gum.service`                           |       yes        |        no       |
-| Purges systemd enablement state and unmasks   |        no        |       yes       |
-| Removes `/etc/default/gum`                    |        no        |       yes       |
-| Removes `/etc/needrestart/conf.d/gum.conf`    |        no        |       yes       |
-| Removes the `gum` user and group              |        no        |        no       |
-| Removes `/etc/gum/` (if created)              |        no        |        no       |
+| Action                                          | `apt remove gummy` | `apt purge gummy` |
+| ----------------------------------------------- | :----------------: | :---------------: |
+| Stops `gummy.service`                           |        yes         |        yes        |
+| Removes `/usr/bin/gummy`, unit, docs, overrides |        yes         |        yes        |
+| Removes `/etc/sudoers.d/gummy`                  |        yes         |        yes        |
+| Masks `gummy.service`                           |        yes         |        no         |
+| Purges systemd enablement state and unmasks     |         no         |        yes        |
+| Removes `/etc/default/gummy`                    |         no         |        yes        |
+| Removes `/etc/needrestart/conf.d/gummy.conf`    |         no         |        yes        |
+| Removes the `gummy` user and group              |         no         |        no         |
+| Removes `/etc/gummy/` (if created)              |         no         |        no         |
 <!-- markdownlint-enable MD013 -->
 
-Per Debian convention, the `gum` user and group are kept even on purge. Remove
-them manually with `sudo deluser --system gum` (which also removes the `gum`
-group if it's empty) and remove `/etc/gum/` with `sudo rm -r /etc/gum` if you
+Per Debian convention, the `gummy` user and group are kept even on purge. Remove
+them manually with `sudo deluser --system gummy` (which also removes the `gummy`
+group if it's empty) and remove `/etc/gummy/` with `sudo rm -r /etc/gummy` if you
 created it.

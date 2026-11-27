@@ -249,12 +249,12 @@ func TestTail(t *testing.T) {
 }
 
 func TestSudoersRule(t *testing.T) {
-	rule := SudoersRule("gum")
+	rule := SudoersRule("gummy")
 	for _, want := range []string{
-		`gum ALL=(root) NOPASSWD: /usr/bin/apt-get -q update,`,
+		`gummy ALL=(root) NOPASSWD: /usr/bin/apt-get -q update,`,
 		`/usr/bin/apt-get -q -o Dpkg\:\:Options\:\:\=--force-confdef -o Dpkg\:\:Options\:\:\=--force-confold upgrade -y`,
 		`autoremove -y`,
-		`Defaults:gum env_keep += "DEBIAN_FRONTEND"`,
+		`Defaults:gummy env_keep += "DEBIAN_FRONTEND"`,
 	} {
 		if !strings.Contains(rule, want) {
 			t.Errorf("sudoers rule missing %q:\n%s", want, rule)

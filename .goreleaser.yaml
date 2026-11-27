@@ -1,17 +1,17 @@
-# GoReleaser config: builds gum, packages it as .deb and publishes a GitHub release.
+# GoReleaser config: builds gummy, packages it as .deb and publishes a GitHub release.
 # Local dry run: make package
 version: 2
 
-project_name: gum
+project_name: gummy
 
 before:
   hooks:
     - go test ./...
 
 builds:
-  - id: gum
+  - id: gummy
     main: .
-    binary: gum
+    binary: gummy
     env:
       - CGO_ENABLED=0
     goos:
@@ -27,26 +27,26 @@ builds:
 
 # Version-free names, so releases/latest/download/<name> always resolves.
 archives:
-  - id: gum
+  - id: gummy
     formats:
       - tar.gz
-    name_template: "gum_linux_{{ .Arch }}"
+    name_template: "gummy_linux_{{ .Arch }}"
     files:
       - LICENSE
       - README.md
 
 nfpms:
-  - id: gum
-    package_name: gum
-    file_name_template: "gum_linux_{{ .Arch }}"
+  - id: gummy
+    package_name: gummy
+    file_name_template: "gummy_linux_{{ .Arch }}"
     formats:
       - deb
     vendor: lttl.dev
-    homepage: https://github.com/m5lk3n/gum
+    homepage: https://github.com/m5lk3n/gummy
     maintainer: Michael Klein <m5lk3n@gmail.com>
     description: |-
       MCP server for a limited set of Linux admin tasks
-      gum (go-util-mcp) lets an MCP client refresh the package index, upgrade
+      gummy lets an MCP client refresh the package index, upgrade
       packages and remove unused dependencies through apt-get.
     license: MIT
     section: admin
@@ -56,26 +56,26 @@ nfpms:
       - adduser
       - sudo
     contents:
-      - src: packaging/gum.service
-        dst: /usr/lib/systemd/system/gum.service
+      - src: packaging/gummy.service
+        dst: /usr/lib/systemd/system/gummy.service
         file_info:
           mode: 0644
-      - src: packaging/gum.default
-        dst: /etc/default/gum
+      - src: packaging/gummy.default
+        dst: /etc/default/gummy
         type: config|noreplace
         file_info:
           mode: 0644
       - src: packaging/needrestart.conf
-        dst: /etc/needrestart/conf.d/gum.conf
+        dst: /etc/needrestart/conf.d/gummy.conf
         type: config|noreplace
         file_info:
           mode: 0644
       - src: LICENSE
-        dst: /usr/share/doc/gum/copyright
+        dst: /usr/share/doc/gummy/copyright
         file_info:
           mode: 0644
       - src: packaging/lintian-overrides
-        dst: /usr/share/lintian/overrides/gum
+        dst: /usr/share/lintian/overrides/gummy
         file_info:
           mode: 0644
     scripts:

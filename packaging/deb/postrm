@@ -1,13 +1,13 @@
 #!/bin/sh
-# gum postrm: remove the sudoers rule and systemd state. Per Debian convention,
-# the gum system user is kept, even on purge.
+# gummy postrm: remove the sudoers rule and systemd state. Per Debian convention,
+# the gummy system user is kept, even on purge.
 set -e
 
-UNIT=gum.service
+UNIT=gummy.service
 
 case "$1" in
     remove | purge)
-        rm -f /etc/sudoers.d/gum
+        rm -f /etc/sudoers.d/gummy
         ;;
 esac
 

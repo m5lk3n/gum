@@ -1,2 +1,2 @@
 # Go binaries are statically linked by design.
-gum: statically-linked-binary [usr/bin/gum]
+gummy: statically-linked-binary [usr/bin/gummy]

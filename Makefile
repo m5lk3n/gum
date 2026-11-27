@@ -25,10 +25,10 @@ needs-govulncheck:
 needs-rumdl:
 	@command -v rumdl >/dev/null 2>&1 || { echo >&2 "rumdl is required but it's not installed. Aborting."; exit 1; }
 
-## build: build the gum MCP server
+## build: build the gummy MCP server
 .PHONY: build
 build:
-	@echo "Building gum version $(VERSION)"
+	@echo "Building gummy version $(VERSION)"
 	@go build -ldflags "-X main.version=$(VERSION) -X 'main.builtBy=$(BUILT_BY)'"
 
 ## package: build snapshot .deb packages and archives into dist/ with GoReleaser (in Docker)
