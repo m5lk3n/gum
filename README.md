@@ -1,7 +1,7 @@
 # GUMMY
 
 <!-- markdownlint-disable MD033 -->
-<h2 align="center"><img src="images/gum.png" alt="Logo"><pre><small>An MCP server for apt-get {update|upgrade|autoremove}</small><br/><s>go-util-mcp</s></pre></h2>
+<h2 align="center"><img src="images/gummy.png" alt="Logo"><pre><small>An MCP server for apt-get {update|upgrade|autoremove}</small><br/><s>go-util-mcp</s></pre></h2>
 
 <p align="center">
 <img alt="Go badge" src="https://img.shields.io/badge/Go-1.27+-00ADD8?logo=go&logoColor=white"/>
@@ -119,7 +119,7 @@ gummy runs as a systemd service under an unprivileged `gummy` user. It reaches r
 only through a sudoers rule that allows exactly the three `apt-get` command
 lines gummy uses (`gummy --print-sudoers gummy` prints it).
 
-Each [release](https://github.com/m5lk3n/gummy/releases) provides
+Each [release](https://github.com/m5lk3n/gum/releases) provides
 `gummy_linux_amd64.deb` and `gummy_linux_arm64.deb`, with checksums in
 `SHA256SUMS`. Instead of the [Quickstart](#-quickstart), you can download the
 package yourself and install it:
