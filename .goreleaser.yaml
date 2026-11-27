@@ -43,7 +43,7 @@ nfpms:
       - deb
     vendor: lttl.dev
     homepage: https://github.com/m5lk3n/gummy
-    maintainer: Michael Klein <m5lk3n@gmail.com>
+    maintainer: Michael Klein <m5lk3n+dev@gmail.com>
     description: |-
       MCP server for a limited set of Linux admin tasks
       gummy lets an MCP client refresh the package index, upgrade

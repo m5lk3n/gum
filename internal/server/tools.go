@@ -30,7 +30,7 @@ func NewMCPServer(m *apt.Manager, build BuildInfo) *mcp.Server {
 	if build.GoVersion == "" {
 		build.GoVersion = runtime.Version()
 	}
-	s := mcp.NewServer(&mcp.Implementation{Name: "gummy", Title: "go-util-mcp", Version: build.Version}, nil)
+	s := mcp.NewServer(&mcp.Implementation{Name: "gummy", Title: "gummy (apt-get MCP server)", Version: build.Version}, nil)
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:  "version",

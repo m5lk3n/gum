@@ -1,5 +1,5 @@
 [Unit]
-Description=gummy (go-util-mcp) MCP server
+Description=gummy (apt-get MCP server)
 After=network-online.target
 Wants=network-online.target
 
