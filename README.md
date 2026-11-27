@@ -1,7 +1,7 @@
 # GUM
 
 <!-- markdownlint-disable MD033 -->
-<h1 align="center"><img src="images/gum.png" alt="Logo"><pre><small>An MCP server for apt-get {update|upgrade|autoremove}</small><br/><s>go-util-mcp</s></pre></h1>
+<h2 align="center"><img src="images/gum.png" alt="Logo"><pre><small>An MCP server for apt-get {update|upgrade|autoremove}</small><br/><s>go-util-mcp</s></pre></h2>
 
 <p align="center">
 <img alt="Go badge" src="https://img.shields.io/badge/Go-1.27+-00ADD8?logo=go&logoColor=white"/>
