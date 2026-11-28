@@ -5,13 +5,13 @@
 Downloads the gummy `.deb` from a GitHub release, verifies it and installs it
 with apt. See the [Quickstart](../README.md#-quickstart).
 
-## `run-gummy-on-debian.sh`
+## `run-gummy-in-container.sh`
 
 Runs gummy in a Debian 13 container for testing and makes it reachable from the
 Docker host:
 
 ```bash
-./scripts/run-gummy-on-debian.sh
+./scripts/run-gummy-in-container.sh
 ```
 
 How it works:

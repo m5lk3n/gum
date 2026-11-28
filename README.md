@@ -1,7 +1,7 @@
-# GUMMY
+# gummy
 
 <!-- markdownlint-disable MD033 -->
-<h2 align="center"><img src="images/gummy.png" alt="Logo"><pre><small>An MCP server for apt-get {update|upgrade|autoremove}</small><br/><s><i>g</i>o-<i>u</i>til-<i>m</i>cp</s></pre></h2>
+<h2 align="center"><img src="images/gummy.png" alt="Logo" width="250"><pre><small>An MCP server for apt-get {update|upgrade|autoremove}</small><br/><s><i>g</i>o-<i>u</i>til-<i>m</i>cp</s></pre></h2>
 
 <p align="center">
 <img alt="Go badge" src="https://img.shields.io/badge/Go-1.27+-00ADD8?logo=go&logoColor=white"/>
@@ -26,6 +26,8 @@ curl -fsSL \
 This downloads the latest `.deb` package, verifies its checksum and installs it
 with `apt-get` (see [Installation](#-installation)). gummy then listens on
 `127.0.0.1:8765`. To pin a version, run `... | sudo GUMMY_VERSION=1.2.3 bash`.
+
+Once installed, follow [Configuration](#configuration) and [Connecting a client](#connecting-a-client).
 
 ## ✨ Features
 
@@ -241,9 +243,13 @@ Omit `headers` when no token is configured.
 
 - `make`
 - `go` 1.27+
-- optional: [todo.txt-cli](https://github.com/todotxt/todo.txt-cli) with
-  `alias t='todo.sh -d ./todo.cfg'`
-
+- `docker` 29+
+- optional:
+  - `golangci-lint` and `govulncheck` for `make check-security`
+  - `rumdl` for `make lint-md`
+  - [todo.txt-cli](https://github.com/todotxt/todo.txt-cli) with
+    `alias t='todo.sh -d ./todo.cfg'`
+  
 ### Common tasks
 
 ```sh
@@ -291,7 +297,7 @@ of any kind; see [LICENSE](LICENSE).
 
 - Inspired by [apt-mcp](https://github.com/brianlechthaler/apt-mcp/).
 - Claude Code implemented this project.
-- Several GenAIs helped me to create the logo :-)
+- Several GenAIs helped me to create the logo :innocent:
 
 ---
 
