@@ -71,7 +71,8 @@ func NewMCPServer(m *apt.Manager, build BuildInfo) *mcp.Server {
 		Name:  "apt_upgrade",
 		Title: "Perform an upgrade",
 		Description: "Upgrade installed packages (apt-get upgrade -y); packages that would need new " +
-			"dependencies or removals are kept back. Run apt_update first. Potentially long-running: " +
+			"dependencies or removals are kept back. Returns the names of the upgraded packages. " +
+			"Run apt_update first. Potentially long-running: " +
 			"set async=true to return immediately. Only one apt job runs at a time.",
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: new(true), OpenWorldHint: new(true)},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in JobInput) (*mcp.CallToolResult, apt.JobResult, error) {
@@ -83,7 +84,7 @@ func NewMCPServer(m *apt.Manager, build BuildInfo) *mcp.Server {
 		Name:  "apt_autoremove",
 		Title: "Remove automatically all unused packages",
 		Description: "Remove packages that were installed as dependencies and are no longer needed " +
-			"(apt-get autoremove -y). Potentially long-running: set async=true to return immediately. " +
+			"(apt-get autoremove -y) and return their names. Potentially long-running: set async=true to return immediately. " +
 			"Only one apt job runs at a time.",
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: new(true)},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in JobInput) (*mcp.CallToolResult, apt.JobResult, error) {

@@ -54,3 +54,8 @@ check-security: needs-golangci-lint needs-govulncheck
 .PHONY: lint-md
 lint-md: needs-rumdl
 	rumdl check .
+
+## fmt-md: format Markdown files with rumdl
+.PHONY: fmt-md
+fmt-md: needs-rumdl
+	rumdl fmt .

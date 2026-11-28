@@ -53,6 +53,7 @@ fails immediately with "another apt job is already running".
 - Upgrades those installed packages reported by `apt_update` that are actually
   "upgradable", i.e., not being kept back
 - Keeps locally modified configuration files (`--force-confdef --force-confold`)
+- Returns the names of the upgraded packages (`upgraded`)
 - **Potentially long-running call**, set `async` to `true` to skip waiting
 
 | Parameter | Type | Required | Default | Meaning |
@@ -63,6 +64,7 @@ fails immediately with "another apt job is already running".
 
 - "Remove automatically all unused packages"
 - Remove unused dependencies
+- Returns the names of the removed packages (`removed`)
 - **Potentially long-running call**, set `async` to `true` to skip waiting
 
 | Parameter | Type | Required | Default | Meaning |
@@ -246,10 +248,10 @@ Omit `headers` when no token is configured.
 - `docker` 29+
 - optional:
   - `golangci-lint` and `govulncheck` for `make check-security`
-  - `rumdl` for `make lint-md`
+  - `rumdl` for `make lint-md` and `make fmt-md`
   - [todo.txt-cli](https://github.com/todotxt/todo.txt-cli) with
     `alias t='todo.sh -d ./todo.cfg'`
-  
+
 ### Common tasks
 
 ```sh

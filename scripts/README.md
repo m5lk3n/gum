@@ -7,8 +7,8 @@ with apt. See the [Quickstart](../README.md#-quickstart).
 
 ## `run-gummy-in-container.sh`
 
-Runs gummy in a Debian 13 container for testing and makes it reachable from the
-Docker host:
+Runs the latest release of gummy in a Debian 13 container for evaluation and
+makes it reachable from the Docker host:
 
 ```bash
 ./scripts/run-gummy-in-container.sh

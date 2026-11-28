@@ -81,6 +81,23 @@ func TestParseSummary(t *testing.T) {
 	}
 }
 
+func TestParsePackages(t *testing.T) {
+	out := `The following packages will be upgraded:
+  a b
+  c
+3 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+`
+	if got, want := ParsePackages(out, upgradedHeader), []string{"a", "b", "c"}; !slices.Equal(got, want) {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	if got := ParsePackages(simOutput, upgradedHeader); !slices.Equal(got, []string{"curl", "libcurl4"}) {
+		t.Fatalf("kept-back packages must not be listed: %q", got)
+	}
+	if got := ParsePackages("0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.\n", upgradedHeader); got != nil {
+		t.Fatalf("got %q, want nil", got)
+	}
+}
+
 func TestUpdateThrottle(t *testing.T) {
 	r := &fakeRunner{}
 	c := &clock{t: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
@@ -152,8 +169,31 @@ func TestUpgradeSync(t *testing.T) {
 	if res.Status != "completed" || res.Summary == nil || res.Summary.Upgraded != 2 {
 		t.Fatalf("unexpected result %+v", res)
 	}
+	if !slices.Equal(res.Upgraded, []string{"curl", "libcurl4"}) {
+		t.Fatalf("unexpected upgraded packages %q", res.Upgraded)
+	}
 	if !r.calls[0].privileged {
 		t.Fatal("upgrade must run privileged")
+	}
+}
+
+func TestAutoremoveSync(t *testing.T) {
+	out := `The following packages will be REMOVED:
+  libfoo1 libbar2
+  libbaz3
+0 upgraded, 0 newly installed, 3 to remove and 0 not upgraded.
+`
+	r := &fakeRunner{respond: func(context.Context, bool, []string) (string, int, error) { return out, 0, nil }}
+	m := newTestManager(r, &clock{t: time.Now()})
+	res, err := m.Autoremove(context.Background(), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Summary == nil || res.Summary.Removed != 3 || res.Upgraded != nil {
+		t.Fatalf("unexpected result %+v", res)
+	}
+	if want := []string{"libfoo1", "libbar2", "libbaz3"}; !slices.Equal(res.Removed, want) {
+		t.Fatalf("got removed %q, want %q", res.Removed, want)
 	}
 }
 

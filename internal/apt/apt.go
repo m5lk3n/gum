@@ -54,6 +54,31 @@ func ParseSummary(out string) (Summary, error) {
 	return Summary{Upgraded: n[0], NewlyInstalled: n[1], Removed: n[2], NotUpgraded: n[3]}, nil
 }
 
+// Headers of the package lists in apt-get's output.
+const (
+	upgradedHeader = "The following packages will be upgraded:"
+	removedHeader  = "The following packages will be REMOVED:"
+)
+
+// ParsePackages returns the package names apt-get lists under header, e.g.,
+// "The following packages will be upgraded:". The names are on the indented
+// lines that follow the header. It returns nil if the header is missing.
+func ParsePackages(out, header string) []string {
+	var pkgs []string
+	in := false
+	for line := range strings.SplitSeq(out, "\n") {
+		switch {
+		case strings.TrimSpace(line) == header:
+			in = true
+		case in && strings.HasPrefix(line, " "):
+			pkgs = append(pkgs, strings.Fields(line)...)
+		default:
+			in = false
+		}
+	}
+	return pkgs
+}
+
 // UpdateResult is returned by Manager.Update.
 type UpdateResult struct {
 	// Refreshed is false when the package index was refreshed recently and the
@@ -71,6 +96,10 @@ type JobResult struct {
 	// Status is "completed", or "started" for async jobs.
 	Status  string   `json:"status"`
 	Summary *Summary `json:"summary,omitempty"`
+	// Upgraded lists the names of the packages that were upgraded (apt_upgrade only).
+	Upgraded []string `json:"upgraded,omitempty" jsonschema:"names of the packages that were upgraded (upgrade only)"`
+	// Removed lists the names of the packages that were removed (apt_autoremove only).
+	Removed []string `json:"removed,omitempty" jsonschema:"names of the packages that were removed (autoremove only)"`
 }
 
 // Config configures a Manager.
@@ -278,15 +307,20 @@ func (m *Manager) Update(ctx context.Context) (UpdateResult, error) {
 
 // Upgrade runs `apt-get upgrade -y`. With async, it returns as soon as the job has started.
 func (m *Manager) Upgrade(ctx context.Context, async bool) (JobResult, error) {
-	return m.job(ctx, "upgrade", argsUpgrade, async)
+	return m.job(ctx, "upgrade", argsUpgrade, async, func(out string, res *JobResult) {
+		res.Upgraded = ParsePackages(out, upgradedHeader)
+	})
 }
 
 // Autoremove runs `apt-get autoremove -y`. With async, it returns as soon as the job has started.
 func (m *Manager) Autoremove(ctx context.Context, async bool) (JobResult, error) {
-	return m.job(ctx, "autoremove", argsAutoremove, async)
+	return m.job(ctx, "autoremove", argsAutoremove, async, func(out string, res *JobResult) {
+		res.Removed = ParsePackages(out, removedHeader)
+	})
 }
 
-func (m *Manager) job(ctx context.Context, name string, args []string, async bool) (JobResult, error) {
+// job runs apt-get with args; packages fills in the package names from apt-get's output.
+func (m *Manager) job(ctx context.Context, name string, args []string, async bool, packages func(out string, res *JobResult)) (JobResult, error) {
 	ch, err := m.start(name, func(ctx context.Context) (any, error) {
 		out, err := m.run(ctx, true, args)
 		if err != nil {
@@ -296,6 +330,7 @@ func (m *Manager) job(ctx context.Context, name string, args []string, async boo
 		if s, err := ParseSummary(out); err == nil {
 			res.Summary = &s
 		}
+		packages(out, &res)
 		return res, nil
 	})
 	if err != nil {
