@@ -22,6 +22,7 @@ var (
 	ErrTimeout         = errors.New("apt job timed out")
 	ErrNoSummary       = errors.New("could not find the summary line in apt-get output")
 	ErrCommandFailed   = errors.New("apt-get failed")
+	ErrAsyncPreview    = errors.New("async requires confirm: a preview (confirm=false) is quick and always synchronous")
 )
 
 // outputTailLines is how many trailing lines of apt-get output an error includes.
@@ -57,6 +58,7 @@ func ParseSummary(out string) (Summary, error) {
 // Headers of the package lists in apt-get's output.
 const (
 	upgradedHeader = "The following packages will be upgraded:"
+	keptBackHeader = "The following packages have been kept back:"
 	removedHeader  = "The following packages will be REMOVED:"
 )
 
@@ -91,15 +93,35 @@ type UpdateResult struct {
 	KeptBack int `json:"kept_back"`
 }
 
+// Job result statuses.
+const (
+	StatusCompleted = "completed"
+	StatusStarted   = "started"
+	StatusPreview   = "preview"
+)
+
+// JobOptions control Manager.Upgrade and Manager.Autoremove.
+type JobOptions struct {
+	// Confirm runs the job for real (apt-get -y). Without it, the job is only
+	// simulated (apt-get -s) and the result previews what it would do.
+	Confirm bool
+	// Async returns as soon as the job has started. It requires Confirm.
+	Async bool
+}
+
 // JobResult is returned by Manager.Upgrade and Manager.Autoremove.
 type JobResult struct {
-	// Status is "completed", or "started" for async jobs.
-	Status  string   `json:"status"`
+	// Status is "completed", "started" for async jobs, or "preview" for
+	// unconfirmed jobs, in which case the other fields describe what the job
+	// would do.
+	Status  string   `json:"status" jsonschema:"completed, started (async) or preview (not confirmed: nothing was changed)"`
 	Summary *Summary `json:"summary,omitempty"`
 	// Upgraded lists the names of the packages that were upgraded (apt_upgrade only).
-	Upgraded []string `json:"upgraded,omitempty" jsonschema:"names of the packages that were upgraded (upgrade only)"`
+	Upgraded []string `json:"upgraded,omitempty" jsonschema:"names of the packages that were (or, in a preview, would be) upgraded (upgrade only)"`
+	// KeptBack lists the names of the packages that were kept back (apt_upgrade only).
+	KeptBack []string `json:"kept_back,omitempty" jsonschema:"names of the upgradable packages that were (or would be) kept back (upgrade only)"`
 	// Removed lists the names of the packages that were removed (apt_autoremove only).
-	Removed []string `json:"removed,omitempty" jsonschema:"names of the packages that were removed (autoremove only)"`
+	Removed []string `json:"removed,omitempty" jsonschema:"names of the packages that were (or, in a preview, would be) removed (autoremove only)"`
 }
 
 // Config configures a Manager.
@@ -121,7 +143,7 @@ const (
 
 // JobInfo describes a running or finished apt job.
 type JobInfo struct {
-	Job        string    `json:"job" jsonschema:"update, upgrade or autoremove"`
+	Job        string    `json:"job" jsonschema:"update, upgrade or autoremove (or upgrade preview, autoremove preview while running)"`
 	State      string    `json:"state" jsonschema:"running, succeeded or failed"`
 	StartedAt  time.Time `json:"started_at"`
 	FinishedAt time.Time `json:"finished_at,omitzero"`
@@ -305,41 +327,80 @@ func (m *Manager) Update(ctx context.Context) (UpdateResult, error) {
 	return wait[UpdateResult](ctx, ch)
 }
 
-// Upgrade runs `apt-get upgrade -y`. With async, it returns as soon as the job has started.
-func (m *Manager) Upgrade(ctx context.Context, async bool) (JobResult, error) {
-	return m.job(ctx, "upgrade", argsUpgrade, async, func(out string, res *JobResult) {
+// Upgrade runs `apt-get upgrade -y` if opts.Confirm is set, and otherwise
+// previews it with `apt-get -s upgrade`.
+func (m *Manager) Upgrade(ctx context.Context, opts JobOptions) (JobResult, error) {
+	return m.job(ctx, "upgrade", argsUpgrade, argsSimulateUpgrade, opts, func(out string, res *JobResult) {
 		res.Upgraded = ParsePackages(out, upgradedHeader)
+		res.KeptBack = ParsePackages(out, keptBackHeader)
 	})
 }
 
-// Autoremove runs `apt-get autoremove -y`. With async, it returns as soon as the job has started.
-func (m *Manager) Autoremove(ctx context.Context, async bool) (JobResult, error) {
-	return m.job(ctx, "autoremove", argsAutoremove, async, func(out string, res *JobResult) {
+// Autoremove runs `apt-get autoremove -y` if opts.Confirm is set, and otherwise
+// previews it with `apt-get -s autoremove`.
+func (m *Manager) Autoremove(ctx context.Context, opts JobOptions) (JobResult, error) {
+	return m.job(ctx, "autoremove", argsAutoremove, argsSimulateAutoremove, opts, func(out string, res *JobResult) {
 		res.Removed = ParsePackages(out, removedHeader)
 	})
 }
 
-// job runs apt-get with args; packages fills in the package names from apt-get's output.
-func (m *Manager) job(ctx context.Context, name string, args []string, async bool, packages func(out string, res *JobResult)) (JobResult, error) {
+// job runs apt-get with args, or previews it with simArgs unless opts.Confirm is
+// set; packages fills in the package names from apt-get's output.
+func (m *Manager) job(ctx context.Context, name string, args, simArgs []string, opts JobOptions,
+	packages func(out string, res *JobResult)) (JobResult, error) {
+	if !opts.Confirm {
+		if opts.Async {
+			return JobResult{}, ErrAsyncPreview
+		}
+		return m.preview(ctx, name, simArgs, packages)
+	}
 	ch, err := m.start(name, func(ctx context.Context) (any, error) {
 		out, err := m.run(ctx, true, args)
 		if err != nil {
 			return nil, err
 		}
-		res := JobResult{Status: "completed"}
-		if s, err := ParseSummary(out); err == nil {
-			res.Summary = &s
-		}
-		packages(out, &res)
-		return res, nil
+		return jobResult(StatusCompleted, out, packages), nil
 	})
 	if err != nil {
 		return JobResult{}, err
 	}
-	if async {
-		return JobResult{Status: "started"}, nil
+	if opts.Async {
+		return JobResult{Status: StatusStarted}, nil
 	}
 	return wait[JobResult](ctx, ch)
+}
+
+// preview simulates a job, unprivileged. It takes the job slot like any other
+// job, so it never reads the package state while a real job changes it, but it
+// isn't recorded in Status.Last, which reports only real jobs.
+func (m *Manager) preview(ctx context.Context, name string, simArgs []string,
+	packages func(out string, res *JobResult)) (JobResult, error) {
+	if err := m.acquire(name + " preview"); err != nil {
+		return JobResult{}, err
+	}
+	defer m.free()
+	out, err := m.run(ctx, false, simArgs)
+	if err != nil {
+		return JobResult{}, err
+	}
+	return jobResult(StatusPreview, out, packages), nil
+}
+
+// free releases the job slot without recording the job.
+func (m *Manager) free() {
+	m.mu.Lock()
+	m.running = nil
+	m.mu.Unlock()
+	m.jobs.Done()
+}
+
+func jobResult(status, out string, packages func(out string, res *JobResult)) JobResult {
+	res := JobResult{Status: status}
+	if s, err := ParseSummary(out); err == nil {
+		res.Summary = &s
+	}
+	packages(out, &res)
+	return res
 }
 
 func (m *Manager) run(ctx context.Context, privileged bool, args []string) (string, error) {

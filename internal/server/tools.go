@@ -13,7 +13,8 @@ import (
 
 // JobInput is the input of the potentially long-running tools.
 type JobInput struct {
-	Async bool `json:"async,omitempty" jsonschema:"Don't wait: start the job and return immediately (fire and forget). Defaults to false."`
+	Confirm bool `json:"confirm,omitempty" jsonschema:"Run the job for real (apt-get -y). Defaults to false: only preview what the job would do, without changing anything."`
+	Async   bool `json:"async,omitempty" jsonschema:"Don't wait: start the job and return immediately (fire and forget). Requires confirm=true. Defaults to false."`
 }
 
 // BuildInfo describes the running gummy binary.
@@ -70,25 +71,29 @@ func NewMCPServer(m *apt.Manager, build BuildInfo) *mcp.Server {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:  "apt_upgrade",
 		Title: "Perform an upgrade",
-		Description: "Upgrade installed packages (apt-get upgrade -y); packages that would need new " +
-			"dependencies or removals are kept back. Returns the names of the upgraded packages. " +
-			"Run apt_update first. Potentially long-running: " +
-			"set async=true to return immediately. Only one apt job runs at a time.",
+		Description: "Upgrade installed packages; packages that would need new dependencies or " +
+			"removals are kept back. Without confirm=true, only previews the upgrade (apt-get -s " +
+			"upgrade) and changes nothing; with confirm=true, upgrades (apt-get upgrade -y). Returns " +
+			"the names of the packages that are (or would be) upgraded and kept back. Run apt_update " +
+			"first. A confirmed upgrade is potentially long-running: set async=true to return " +
+			"immediately. Only one apt job runs at a time.",
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: new(true), OpenWorldHint: new(true)},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in JobInput) (*mcp.CallToolResult, apt.JobResult, error) {
-		res, err := m.Upgrade(ctx, in.Async)
+		res, err := m.Upgrade(ctx, apt.JobOptions{Confirm: in.Confirm, Async: in.Async})
 		return nil, res, err
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:  "apt_autoremove",
 		Title: "Remove automatically all unused packages",
-		Description: "Remove packages that were installed as dependencies and are no longer needed " +
-			"(apt-get autoremove -y) and return their names. Potentially long-running: set async=true to return immediately. " +
-			"Only one apt job runs at a time.",
+		Description: "Remove packages that were installed as dependencies and are no longer needed, " +
+			"and return their names. Without confirm=true, only previews the removal (apt-get -s " +
+			"autoremove) and changes nothing; with confirm=true, removes them (apt-get autoremove -y). " +
+			"A confirmed autoremove is potentially long-running: set async=true to return " +
+			"immediately. Only one apt job runs at a time.",
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: new(true)},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in JobInput) (*mcp.CallToolResult, apt.JobResult, error) {
-		res, err := m.Autoremove(ctx, in.Async)
+		res, err := m.Autoremove(ctx, apt.JobOptions{Confirm: in.Confirm, Async: in.Async})
 		return nil, res, err
 	})
 

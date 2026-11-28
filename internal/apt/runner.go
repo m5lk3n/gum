@@ -33,8 +33,11 @@ var (
 	argsAutoremove = append(append([]string{"-q"}, dpkgOptions...), "autoremove", "-y")
 )
 
-// Unprivileged simulation: apt-get can simulate as a normal user.
-var argsSimulateUpgrade = []string{"-s", "-q", "-o", "Debug::NoLocking=1", "upgrade"}
+// Unprivileged simulations: apt-get can simulate as a normal user.
+var (
+	argsSimulateUpgrade    = []string{"-s", "-q", "-o", "Debug::NoLocking=1", "upgrade"}
+	argsSimulateAutoremove = []string{"-s", "-q", "-o", "Debug::NoLocking=1", "autoremove"}
+)
 
 // Runner executes apt-get with the given arguments and returns its combined output.
 type Runner interface {

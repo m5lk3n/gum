@@ -162,7 +162,7 @@ func TestUpdateFailureDoesNotThrottle(t *testing.T) {
 func TestUpgradeSync(t *testing.T) {
 	r := &fakeRunner{}
 	m := newTestManager(r, &clock{t: time.Now()})
-	res, err := m.Upgrade(context.Background(), false)
+	res, err := m.Upgrade(context.Background(), JobOptions{Confirm: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,6 +177,83 @@ func TestUpgradeSync(t *testing.T) {
 	}
 }
 
+func TestUpgradePreview(t *testing.T) {
+	r := &fakeRunner{}
+	m := newTestManager(r, &clock{t: time.Now()})
+	res, err := m.Upgrade(context.Background(), JobOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Status != StatusPreview || res.Summary == nil || res.Summary.Upgraded != 2 {
+		t.Fatalf("unexpected result %+v", res)
+	}
+	if !slices.Equal(res.Upgraded, []string{"curl", "libcurl4"}) || !slices.Equal(res.KeptBack, []string{"linux-image-amd64"}) {
+		t.Fatalf("unexpected packages %+v", res)
+	}
+	if len(r.calls) != 1 || r.calls[0].privileged || !slices.Equal(r.calls[0].args, argsSimulateUpgrade) {
+		t.Fatalf("preview must only simulate, unprivileged: %+v", r.calls)
+	}
+	if st := m.Status(); st.Running != nil || len(st.Last) != 0 {
+		t.Fatalf("preview must not be recorded: %+v", st)
+	}
+}
+
+func TestAutoremovePreview(t *testing.T) {
+	r := &fakeRunner{}
+	m := newTestManager(r, &clock{t: time.Now()})
+	res, err := m.Autoremove(context.Background(), JobOptions{})
+	if err != nil || res.Status != StatusPreview {
+		t.Fatalf("unexpected result %+v, %v", res, err)
+	}
+	if len(r.calls) != 1 || r.calls[0].privileged || !slices.Equal(r.calls[0].args, argsSimulateAutoremove) {
+		t.Fatalf("preview must only simulate, unprivileged: %+v", r.calls)
+	}
+}
+
+func TestAsyncPreviewRejected(t *testing.T) {
+	r := &fakeRunner{}
+	m := newTestManager(r, &clock{t: time.Now()})
+	if _, err := m.Upgrade(context.Background(), JobOptions{Async: true}); !errors.Is(err, ErrAsyncPreview) {
+		t.Fatalf("got %v, want ErrAsyncPreview", err)
+	}
+	if _, err := m.Autoremove(context.Background(), JobOptions{Async: true}); !errors.Is(err, ErrAsyncPreview) {
+		t.Fatalf("got %v, want ErrAsyncPreview", err)
+	}
+	if len(r.calls) != 0 {
+		t.Fatalf("apt-get must not run: %+v", r.calls)
+	}
+}
+
+func TestPreviewWhileBusy(t *testing.T) {
+	release := make(chan struct{})
+	r := &fakeRunner{respond: func(_ context.Context, _ bool, args []string) (string, int, error) {
+		if slices.Equal(args, argsUpgrade) {
+			<-release
+		}
+		return simOutput, 0, nil
+	}}
+	m := newTestManager(r, &clock{t: time.Now()})
+	ctx := context.Background()
+	if _, err := m.Upgrade(ctx, JobOptions{Confirm: true, Async: true}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Upgrade(ctx, JobOptions{}); !errors.Is(err, ErrBusy) {
+		t.Fatalf("got %v, want ErrBusy", err)
+	}
+	close(release)
+	waitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if err := m.Wait(waitCtx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Upgrade(ctx, JobOptions{}); err != nil {
+		t.Fatalf("preview after job finished: %v", err)
+	}
+	if got := m.Status().Last["upgrade"].Result.(JobResult).Status; got != StatusCompleted {
+		t.Fatalf("preview must not replace the last real upgrade, got status %q", got)
+	}
+}
+
 func TestAutoremoveSync(t *testing.T) {
 	out := `The following packages will be REMOVED:
   libfoo1 libbar2
@@ -185,7 +262,7 @@ func TestAutoremoveSync(t *testing.T) {
 `
 	r := &fakeRunner{respond: func(context.Context, bool, []string) (string, int, error) { return out, 0, nil }}
 	m := newTestManager(r, &clock{t: time.Now()})
-	res, err := m.Autoremove(context.Background(), false)
+	res, err := m.Autoremove(context.Background(), JobOptions{Confirm: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,11 +283,11 @@ func TestAsyncAndBusy(t *testing.T) {
 	m := newTestManager(r, &clock{t: time.Now()})
 	ctx := context.Background()
 
-	res, err := m.Upgrade(ctx, true)
+	res, err := m.Upgrade(ctx, JobOptions{Confirm: true, Async: true})
 	if err != nil || res.Status != "started" {
 		t.Fatalf("async upgrade: %+v, %v", res, err)
 	}
-	if _, err := m.Autoremove(ctx, true); !errors.Is(err, ErrBusy) {
+	if _, err := m.Autoremove(ctx, JobOptions{Confirm: true, Async: true}); !errors.Is(err, ErrBusy) {
 		t.Fatalf("got %v, want ErrBusy", err)
 	}
 	if _, err := m.Update(ctx); !errors.Is(err, ErrBusy) {
@@ -223,7 +300,7 @@ func TestAsyncAndBusy(t *testing.T) {
 	if err := m.Wait(waitCtx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := m.Autoremove(ctx, false); err != nil {
+	if _, err := m.Autoremove(ctx, JobOptions{Confirm: true}); err != nil {
 		t.Fatalf("autoremove after job finished: %v", err)
 	}
 }
@@ -237,11 +314,11 @@ func TestSyncCallerGivesUp(t *testing.T) {
 	m := newTestManager(r, &clock{t: time.Now()})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := m.Upgrade(ctx, false); !errors.Is(err, context.Canceled) {
+	if _, err := m.Upgrade(ctx, JobOptions{Confirm: true}); !errors.Is(err, context.Canceled) {
 		t.Fatalf("got %v, want context.Canceled", err)
 	}
 	// The job keeps running even though the caller left.
-	if _, err := m.Upgrade(context.Background(), true); !errors.Is(err, ErrBusy) {
+	if _, err := m.Upgrade(context.Background(), JobOptions{Confirm: true, Async: true}); !errors.Is(err, ErrBusy) {
 		t.Fatalf("got %v, want ErrBusy", err)
 	}
 	close(release)
@@ -334,14 +411,14 @@ func TestStatus(t *testing.T) {
 		t.Fatalf("unexpected last update %+v", u)
 	}
 
-	if _, err := m.Upgrade(ctx, true); err != nil {
+	if _, err := m.Upgrade(ctx, JobOptions{Confirm: true, Async: true}); err != nil {
 		t.Fatal(err)
 	}
 	st = m.Status()
 	if st.Running == nil || st.Running.Job != "upgrade" || st.Running.State != StateRunning {
 		t.Fatalf("expected running upgrade, got %+v", st.Running)
 	}
-	if _, err := m.Autoremove(ctx, false); !errors.Is(err, ErrBusy) || !strings.Contains(err.Error(), "upgrade") {
+	if _, err := m.Autoremove(ctx, JobOptions{Confirm: true}); !errors.Is(err, ErrBusy) || !strings.Contains(err.Error(), "upgrade") {
 		t.Fatalf("busy error should name the running job: %v", err)
 	}
 

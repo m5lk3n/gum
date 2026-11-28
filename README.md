@@ -47,29 +47,40 @@ fails immediately with "another apt job is already running".
   recomputed from the existing index
 - Synchronous call
 
-`apt_upgrade` (a.k.a. `apt-get upgrade -y`):
+`apt_upgrade` (a.k.a. `apt-get upgrade`):
 
 - "Perform an upgrade"
 - Upgrades those installed packages reported by `apt_update` that are actually
   "upgradable", i.e., not being kept back
+- Without `confirm`, only previews the upgrade (`apt-get -s upgrade`, see
+  [Previews](#previews))
+- With `confirm` set to `true`, upgrades (`apt-get upgrade -y`)
 - Keeps locally modified configuration files (`--force-confdef --force-confold`)
-- Returns the names of the upgraded packages (`upgraded`)
-- **Potentially long-running call**, set `async` to `true` to skip waiting
+- Returns the names of the packages that are (or would be) upgraded
+  (`upgraded`) and kept back (`kept_back`)
+- **Potentially long-running call** when confirmed, set `async` to `true` to
+  skip waiting
 
 | Parameter | Type | Required | Default | Meaning |
 | --- | --- | --- | --- | --- |
-| `async` | boolean | no | `false` | Don't wait: start the job and return immediately |
+| `confirm` | boolean | no | `false` | Upgrade for real; otherwise only preview the upgrade |
+| `async` | boolean | no | `false` | Don't wait: start the job and return immediately; requires `confirm` |
 
-`apt_autoremove` (a.k.a. `apt-get autoremove -y`):
+`apt_autoremove` (a.k.a. `apt-get autoremove`):
 
 - "Remove automatically all unused packages"
 - Remove unused dependencies
-- Returns the names of the removed packages (`removed`)
-- **Potentially long-running call**, set `async` to `true` to skip waiting
+- Without `confirm`, only previews the removal (`apt-get -s autoremove`, see
+  [Previews](#previews))
+- With `confirm` set to `true`, removes them (`apt-get autoremove -y`)
+- Returns the names of the packages that are (or would be) removed (`removed`)
+- **Potentially long-running call** when confirmed, set `async` to `true` to
+  skip waiting
 
 | Parameter | Type | Required | Default | Meaning |
 | --- | --- | --- | --- | --- |
-| `async` | boolean | no | `false` | Don't wait: start the job and return immediately |
+| `confirm` | boolean | no | `false` | Remove for real; otherwise only preview the removal |
+| `async` | boolean | no | `false` | Don't wait: start the job and return immediately; requires `confirm` |
 
 `apt_status`:
 
@@ -92,12 +103,31 @@ fails immediately with "another apt job is already running".
   started, e.g., by `apt_upgrade` (see [Upgrading](#upgrading))
 - Synchronous call
 
+### Previews
+
+Like `apt-get upgrade` without `-y`, which lists the packages and asks before
+it changes anything, `apt_upgrade` and `apt_autoremove` only preview their job
+unless `confirm` is `true`. A preview simulates the job as the unprivileged
+`gummy` user, changes nothing, and returns
+`{"status": "preview", "summary": {...}, ...}` with the package names. A typical
+upgrade is:
+
+1. `apt_update` to refresh the package index
+2. `apt_upgrade` to see which packages would be upgraded
+3. `apt_upgrade` with `confirm: true` (and optionally `async: true`) to upgrade
+
+A preview is quick and always synchronous, so `async: true` without
+`confirm: true` is rejected. A preview counts as an apt job, so it fails while
+another job is running, but `apt_status` doesn't record it. The confirmed job
+may differ from the preview if the package index was refreshed in between; its
+result lists the packages it actually changed.
+
 ### Async calls
 
-`async: true` is fire and forget: the call returns `{"status": "started"}` as
-soon as the job has started. Poll `apt_status` to see whether the job is still
-running and how it ended. The result is also written to the service log
-(`journalctl -u gummy`).
+`async: true` (together with `confirm: true`) is fire and forget: the call
+returns `{"status": "started"}` as soon as the job has started. Poll
+`apt_status` to see whether the job is still running and how it ended. The
+result is also written to the service log (`journalctl -u gummy`).
 
 A synchronous call returns `{"status": "completed", "summary": {...}}`. If the
 client disconnects or gives up waiting, the job still runs to completion. gummy
@@ -168,13 +198,13 @@ Even `purge` leaves the following in place. Remove them manually if needed:
 
 ### Upgrading
 
-Install a newer package, rerun the Quickstart, or let gummy upgrade itself
-with `apt_upgrade` if it's in one of your apt sources. An upgrade never stops or
-restarts gummy: when gummy upgrades itself, apt-get runs inside
+Install a newer package, rerun the Quickstart, or let gummy upgrade itself with
+`apt_upgrade` (`confirm: true`) if it's in one of your apt sources. An upgrade
+never stops or restarts gummy: when gummy upgrades itself, apt-get runs inside
 `gummy.service`, and restarting the service from there would deadlock until the
 stop timeout and then kill dpkg. For the same reason, the package tells
-`needrestart` to leave gummy alone. The previous version keeps running until
-you restart it, and the `version` tool reports `restart_pending: true` in the
+`needrestart` to leave gummy alone. The previous version keeps running until you
+restart it, and the `version` tool reports `restart_pending: true` in the
 meantime:
 
 ```sh
